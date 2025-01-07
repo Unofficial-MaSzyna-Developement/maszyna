@@ -7448,6 +7448,15 @@ bool TTrain::Update( double const Deltatime )
 	else
 		btAKLVents.Turn(true);
 
+    if (mvOccupied->modernDimmerState >= 3)
+	{
+		btHighBeamLights.Turn(true);
+    }
+    else 
+    {
+		btHighBeamLights.Turn(true);
+    }
+
     if( true == lowvoltagepower ) {
         // McZapkie-141102: SHP i czuwak, TODO: sygnalizacja kabinowa
         if( mvOccupied->SecuritySystem.is_vigilance_blinking() ) {
@@ -10162,8 +10171,9 @@ bool TTrain::initialize_button(cParser &Parser, std::string const &Label, int co
         { "i-universal8:", btUniversals[ 8 ] },
         { "i-universal9:", btUniversals[ 9 ] },
         { "i-cabactived:", btCabActived },
-	      {"i-aklvents:", btAKLVents},
-	      {"i-compressorany:", btCompressors }
+	    {"i-aklvents:", btAKLVents},
+	    {"i-compressorany:", btCompressors },
+	    {"i-highbeamlights:", btHighBeamLights}
     };
     {
         auto lookup = lights.find( Label );
