@@ -68,39 +68,63 @@ std::string filename_scenery() {
     }
 }
 
+void LogFile(const char *str, logtype const Type) {
+	if (str == nullptr)
+	{
+		return;
+	}
+	if (true == TestFlag(Global.DisabledLogTypes, static_cast<unsigned int>(Type)))
+	{
+		return;
+	}
+
+	if (Global.iWriteLogEnabled & 1)
+	{
+		if (!output.is_open())
+		{
+
+			std::string const filename = (Global.MultipleLogs ? "logs/log (" + filename_scenery() + ") " + filename_date() + ".txt" : "log.txt");
+			output.open(filename, std::ios::trunc);
+		}
+		output << str << "\n";
+		output.flush();
+	}
+}
+
 void WriteLog( const char *str, logtype const Type ) {
 
-    if( str == nullptr ) { return; }
-    if( true == TestFlag( Global.DisabledLogTypes, static_cast<unsigned int>( Type ) ) ) { return; }
+    LogFile(str, Type);
 
-    if (Global.iWriteLogEnabled & 1) {
-        if( !output.is_open() ) {
+    if (Global.iWriteLogEnabled & 2)
+	{
+		PrintConsole(str, logstatus::normal);
+	}
+}
 
-            std::string const filename =
-                ( Global.MultipleLogs ?
-                    "logs/log (" + filename_scenery() + ") " + filename_date() + ".txt" :
-                    "log.txt" );
-            output.open( filename, std::ios::trunc );
-        }
-        output << str << "\n";
-        output.flush();
-    }
-
-    log_scrollback.emplace_back(std::string(str));
-    if (log_scrollback.size() > 200)
-        log_scrollback.pop_front();
-
-    if( Global.iWriteLogEnabled & 2 ) {
+void PrintConsole(const char *str, logstatus const status) {
+	log_scrollback.emplace_back(std::string(str));
+	if (log_scrollback.size() > 200)
+		log_scrollback.pop_front();
 #ifdef _WIN32
-        // hunter-271211: pisanie do konsoli tylko, gdy nie jest ukrywana
-        SetConsoleTextAttribute( GetStdHandle( STD_OUTPUT_HANDLE ), FOREGROUND_GREEN | FOREGROUND_INTENSITY );
-        DWORD wr = 0;
-        WriteConsole( GetStdHandle( STD_OUTPUT_HANDLE ), str, (DWORD)strlen( str ), &wr, NULL );
-        WriteConsole( GetStdHandle( STD_OUTPUT_HANDLE ), endstring, (DWORD)strlen( endstring ), &wr, NULL );
-#else
-    printf("%s\n", str);
-#endif
+	// hunter-271211: pisanie do konsoli tylko, gdy nie jest ukrywana
+	switch (status)
+	{
+	case logstatus::error:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_INTENSITY);
+		break;
+	case logstatus::warning:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+		break;
+	default:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+		break;
     }
+	DWORD wr = 0;
+	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), str, (DWORD)strlen(str), &wr, NULL);
+	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), endstring, (DWORD)strlen(endstring), &wr, NULL);
+#else
+	printf("%s\n", str);
+#endif
 }
 
 void ErrorLog( const char *str, logtype const Type ) {
@@ -143,7 +167,13 @@ void Error(const char *&asMessage, bool box)
 void ErrorLog(const std::string &str, logtype const Type )
 {
     ErrorLog( str.c_str(), Type );
-    WriteLog( str.c_str(), Type );
+	LogFile(str.c_str(), Type);
+	PrintConsole(str.c_str(), logstatus::error);
+}
+
+void WarningLog(const std::string &str, logtype const Type) {
+	LogFile(str.c_str(), Type);
+	PrintConsole(str.c_str(), logstatus::warning);
 }
 
 void WriteLog(const std::string &str, logtype const Type )
