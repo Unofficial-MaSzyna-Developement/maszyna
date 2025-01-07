@@ -971,6 +971,7 @@ class TMoverParameters
 		std::array<basic_door, 2> instances; // door on the right and left side of the vehicle
 		// ld outputs
 		bool is_locked{false};
+		double doorLockSpeed = 10.0; // predkosc przy ktorej wyzwalana jest blokada drzwi
 	};
 
 	struct water_heater
@@ -1415,6 +1416,7 @@ class TMoverParameters
 #endif
 	double MirrorMaxShift{90.0};
 	double MirrorVelClose{5.0};
+	double maxTachoSpeed = 0.0; // maksymalna predkosc na tarczce predkosciomierza analogowego
 	bool MirrorForbidden{false}; /*czy jest pozwolenie na otworzenie lusterek (przycisk)*/
 	bool ScndS = false; /*Czy jest bocznikowanie na szeregowej*/
 	bool SpeedCtrl = false; /*czy jest tempomat*/

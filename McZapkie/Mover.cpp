@@ -8615,10 +8615,7 @@ TMoverParameters::update_doors( double const Deltatime ) {
      || ( Doors.close_control == control_t::conductor )
      || ( Doors.close_control == control_t::mixed ) };
 
-    Doors.is_locked =
-        ( true == Doors.has_lock )
-     && ( true == Doors.lock_enabled )
-     && ( Vel >= 10.0 );
+    Doors.is_locked = (true == Doors.has_lock) && (true == Doors.lock_enabled) && (Vel >= Doors.doorLockSpeed);
 
     for( auto &door : Doors.instances ) {
         // revoke permit if...
@@ -10319,6 +10316,7 @@ void TMoverParameters::LoadFIZ_Doors( std::string const &line ) {
     extract_value( Doors.has_warning, "DoorClosureWarning", line, "" );
     extract_value( Doors.has_autowarning, "DoorClosureWarningAuto", line, "" );
     extract_value( Doors.has_lock, "DoorBlocked", line, "" );
+	extract_value(Doors.doorLockSpeed, "DoorLockSpeed", line, "");
 
     {
         auto const remotedoorcontrol {
@@ -10567,6 +10565,10 @@ void TMoverParameters::LoadFIZ_Cntrl( std::string const &line ) {
     }
     // mbrake
     extract_value( MBrake, "ManualBrake", line, "" );
+
+    // maksymalna predkosc dostepna na tarczce predkosciomierza
+	extract_value(maxTachoSpeed, "MaxTachoSpeed", line, "");
+
     // dynamicbrake
     {
         std::map<std::string, int> dynamicbrakes{
