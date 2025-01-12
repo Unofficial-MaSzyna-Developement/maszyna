@@ -7449,10 +7449,10 @@ bool TTrain::Update( double const Deltatime )
 		btCabActived.Turn(false);
     }
 
-    if (mvControlled->Battery && mvControlled->CabActive == 0)
+    if (mvControlled->Battery && mvControlled->CabActive != 0)
 		btAKLVents.Turn(true);
 	else
-		btAKLVents.Turn(true);
+		btAKLVents.Turn(false);
 
     if (mvOccupied->modernDimmerState >= 3)
 	{
