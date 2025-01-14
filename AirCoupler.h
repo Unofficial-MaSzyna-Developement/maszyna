@@ -22,26 +22,57 @@ private:
 public:
     AirCoupler();
     ~AirCoupler();
-    ///Reset members.
+    
+    
+    /// <summary>
+    /// Reset members.
+    /// </summary>
     void Clear();
-    ///Looks for submodels.
+    
+    /// <summary>
+    /// Looks for submodels.
+    /// </summary>
+    /// <param name="asName"></param>
+    /// <param name="Model"></param>
     void Init(std::string const &asName, TModel3d *Model);
-    ///Loads info about coupler.
+
+    /// <summary>
+    /// Loads info about coupler.
+    /// </summary>
+    /// <param name="Parser"></param>
+    /// <param name="Model"></param>
     void Load(cParser *Parser, TModel3d *Model);
+
+    /// <summary>
+    /// Returns status
+    /// </summary>
+    /// <returns></returns>
     int GetStatus();
-    inline void TurnOn() ///Turns on straight coupler.
+
+    /// <summary>
+    /// Turns on straight coupler.
+    /// </summary>
+    inline void TurnOn() 
     {
         On = true;
         xOn = false;
         Update();
     };
-    inline void TurnOff() ///Turns on disconnected coupler.
+
+    /// <summary>
+    /// Turns on disconnected coupler.
+    /// </summary>
+    inline void TurnOff()
     {
         On = false;
         xOn = false;
         Update();
     };
-    inline void TurnxOn() ///Turns on slanted coupler.
+
+    /// <summary>
+    /// Turns on slanted coupler.
+    /// </summary>
+    inline void TurnxOn()
     {
         On = false;
         xOn = true;
