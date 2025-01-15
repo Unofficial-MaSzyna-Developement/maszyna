@@ -97,16 +97,84 @@ void TAnimPant::AKP_4E()
     fHeightExtra[3] = -0.07f; //+0.3048
     fHeightExtra[4] = -0.15f; //+0.3810
 };
-void TAnimPant::DSAx()
-{ // ustawienie wymiarów dla pantografow z rodziny DSA
+void TAnimPant::WBL85()
+{ // ustawienie wymiarów dla pantografu WBL88
 	vPos = Math3D::vector3(0, 0, 0); // przypisanie domyśnych współczynników do pantografów
 
-    // mnozniki animacji ramion dla pantografow z rodziny DSAx
+    // mnozniki animacji ramion dla pantografu WBL88
 	rd1rf = 1.f;
 	rd2rf = 1.2;
 	rg1rf = 0.875;
 	rg2rf = 1.0;
-	slizgrf = 0.75;
+	slizgrf = 1.f;
+
+	fLenL1 = 1.98374;
+	fLenU1 = 2.14199;
+	fHoriz = 0.142; // 0.54555075 przesunięcie ślizgu w długości pojazdu względem
+	                // osi obrotu dolnego ramienia
+	fHeight = 0.09353; // wysokość ślizgu ponad oś obrotu
+	fWidth = 0.4969; // połowa szerokości ślizgu
+	fAngleL0 = DegToRad(2.8547285515689267247882521833308);
+	fAngleL = fAngleL0; // początkowy kąt dolnego ramienia
+	// fAngleU0=acos((1.22*cos(fAngleL)+0.535)/1.755); //górne ramię
+	fAngleU0 = acos((fLenL1 * cos(fAngleL) + fHoriz) / fLenU1); // górne ramię
+	fAngleU = fAngleU0; // początkowy kąt
+	// PantWys=1.22*sin(fAngleL)+1.755*sin(fAngleU); //wysokość początkowa
+	PantWys = fLenL1 * sin(fAngleL) + fLenU1 * sin(fAngleU) + fHeight; // wysokość początkowa
+	PantTraction = PantWys;
+	hvPowerWire = NULL;
+	fWidthExtra = 0.381f; //(2.032m-1.027)/2
+	// poza obszarem roboczym jest aproksymacja łamaną o 5 odcinkach
+	fHeightExtra[0] = 0.0f; //+0.0762
+	fHeightExtra[1] = -0.01f; //+0.1524
+	fHeightExtra[2] = -0.03f; //+0.2286
+	fHeightExtra[3] = -0.07f; //+0.3048
+	fHeightExtra[4] = -0.15f; //+0.3810
+};
+void TAnimPant::EC160_200()
+{ // ustawienie wymiarów dla pantografow EC160 lub EC200
+	vPos = Math3D::vector3(0, 0, 0); // przypisanie domyśnych współczynników do pantografów
+
+	// mnozniki animacji ramion dla pantografow EC160 lub EC200
+	rd1rf = 1.f;
+	rd2rf = 0.85;
+	rg1rf = 1.f;
+	rg2rf = 1.f; // 0.833
+	slizgrf = 1.f;
+
+	fLenL1 = 1.98374;
+	fLenU1 = 2.14199;
+	fHoriz = 0.142; // 0.54555075 przesunięcie ślizgu w długości pojazdu względem
+	                // osi obrotu dolnego ramienia
+	fHeight = 0.09353; // wysokość ślizgu ponad oś obrotu
+	fWidth = 0.4969; // połowa szerokości ślizgu
+	fAngleL0 = DegToRad(2.8547285515689267247882521833308);
+	fAngleL = fAngleL0; // początkowy kąt dolnego ramienia
+	// fAngleU0=acos((1.22*cos(fAngleL)+0.535)/1.755); //górne ramię
+	fAngleU0 = acos((fLenL1 * cos(fAngleL) + fHoriz) / fLenU1); // górne ramię
+	fAngleU = fAngleU0; // początkowy kąt
+	// PantWys=1.22*sin(fAngleL)+1.755*sin(fAngleU); //wysokość początkowa
+	PantWys = fLenL1 * sin(fAngleL) + fLenU1 * sin(fAngleU) + fHeight; // wysokość początkowa
+	PantTraction = PantWys;
+	hvPowerWire = NULL;
+	fWidthExtra = 0.381f; //(2.032m-1.027)/2
+	// poza obszarem roboczym jest aproksymacja łamaną o 5 odcinkach
+	fHeightExtra[0] = 0.0f; //+0.0762
+	fHeightExtra[1] = -0.01f; //+0.1524
+	fHeightExtra[2] = -0.03f; //+0.2286
+	fHeightExtra[3] = -0.07f; //+0.3048
+	fHeightExtra[4] = -0.15f; //+0.3810
+};
+void TAnimPant::DSAx()
+{ // ustawienie wymiarów dla pantografow z rodziny DSA
+	vPos = Math3D::vector3(0, 0, 0); // przypisanie domyśnych współczynników do pantografów
+
+	// mnozniki animacji ramion dla pantografow z rodziny DSA
+	rd1rf = 1.f;
+	rd2rf = 1.025;
+	rg1rf = 0.875;
+	rg2rf = 1.f;
+	slizgrf = 1.f;
 
 	fLenL1 = 1.98374;
 	fLenU1 = 2.14199;
@@ -167,6 +235,12 @@ int TAnim::TypeSet(int i, TMoverParameters currentMover, int fl)
                 break;
 		    case(TPantType::DSAx):
                 fParamPants->DSAx();
+			    break;
+            case(TPantType::EC160_200):
+                fParamPants->EC160_200();
+			    break;
+            case(TPantType::WBL88):
+                fParamPants->WBL88();
 			    break;
         }
 
@@ -629,9 +703,9 @@ void TDynamicObject::UpdatePant(TAnim *pAnim)
 	if (pAnim->smElement[2])
 		pAnim->smElement[2]->SetRotate(float3(1, 0, 0), c); // górne ramie 1
 	if (pAnim->smElement[3])
-		pAnim->smElement[3]->SetRotate(float3(-1, 0, 0), c); // gorne ramie 2
+		pAnim->smElement[3]->SetRotate(float3(-1, 0, 0), c * pAnim->fParamPants->rg2rf); // gorne ramie 2
 	if (pAnim->smElement[4])
-		pAnim->smElement[4]->SetRotate(float3(-1, 0, 0), b); // ślizg
+		pAnim->smElement[4]->SetRotate(float3(-1, 0, 0), b * pAnim->fParamPants->slizgrf); // ślizg
 }
 
 // doorstep animation, shift

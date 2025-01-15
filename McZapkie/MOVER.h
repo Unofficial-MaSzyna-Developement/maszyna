@@ -470,7 +470,9 @@ struct TBoilerType {
 enum TPantType
 {
 	AKP_4E,
-	DSAx
+	DSAx,
+	EC160_200,
+	WBL85
 };
 struct TCurrentCollector {
     long CollectorsNo; //musi być tu, bo inaczej się kopie

@@ -112,7 +112,9 @@ class TAnimPant
 	float slizgrf{1.f};  // mnoznik obrotu slizgacza
 
     void AKP_4E();
+	void WBL85();
 	void DSAx();
+	void EC160_200();
 };
 
 class TAnim
