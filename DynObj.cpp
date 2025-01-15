@@ -97,8 +97,42 @@ void TAnimPant::AKP_4E()
     fHeightExtra[3] = -0.07f; //+0.3048
     fHeightExtra[4] = -0.15f; //+0.3810
 };
+void TAnimPant::DSAx()
+{ // ustawienie wymiarów dla pantografow z rodziny DSA
+	vPos = Math3D::vector3(0, 0, 0); // przypisanie domyśnych współczynników do pantografów
+
+    // mnozniki animacji ramion dla pantografow z rodziny DSAx
+	rd1rf = 1.f;
+	rd2rf = 1.2;
+	rg1rf = 0.875;
+	rg2rf = 1.0;
+	slizgrf = 0.75;
+
+	fLenL1 = 1.98374;
+	fLenU1 = 2.14199;
+	fHoriz = 0.142; // 0.54555075 przesunięcie ślizgu w długości pojazdu względem
+	                // osi obrotu dolnego ramienia
+	fHeight = 0.09353; // wysokość ślizgu ponad oś obrotu
+	fWidth = 0.4969; // połowa szerokości ślizgu
+	fAngleL0 = DegToRad(2.8547285515689267247882521833308);
+	fAngleL = fAngleL0; // początkowy kąt dolnego ramienia
+	// fAngleU0=acos((1.22*cos(fAngleL)+0.535)/1.755); //górne ramię
+	fAngleU0 = acos((fLenL1 * cos(fAngleL) + fHoriz) / fLenU1); // górne ramię
+	fAngleU = fAngleU0; // początkowy kąt
+	// PantWys=1.22*sin(fAngleL)+1.755*sin(fAngleU); //wysokość początkowa
+	PantWys = fLenL1 * sin(fAngleL) + fLenU1 * sin(fAngleU) + fHeight; // wysokość początkowa
+	PantTraction = PantWys;
+	hvPowerWire = NULL;
+	fWidthExtra = 0.381f; //(2.032m-1.027)/2
+	// poza obszarem roboczym jest aproksymacja łamaną o 5 odcinkach
+	fHeightExtra[0] = 0.0f; //+0.0762
+	fHeightExtra[1] = -0.01f; //+0.1524
+	fHeightExtra[2] = -0.03f; //+0.2286
+	fHeightExtra[3] = -0.07f; //+0.3048
+	fHeightExtra[4] = -0.15f; //+0.3810
+};
 //---------------------------------------------------------------------------
-int TAnim::TypeSet(int i, int fl)
+int TAnim::TypeSet(int i, TMoverParameters currentMover, int fl)
 { // ustawienie typu animacji i zależnej od niego ilości animowanych submodeli
     fMaxDist = -1.0; // normalnie nie pokazywać
     switch (i)
@@ -127,7 +161,15 @@ int TAnim::TypeSet(int i, int fl)
     case 5: // 5-pantograf - 5 submodeli
         iFlags = 0x055;
         fParamPants = new TAnimPant();
-        fParamPants->AKP_4E();
+        switch (currentMover.EnginePowerSource.CollectorParameters.PantographType) {
+		    case (TPantType::AKP_4E):
+			    fParamPants->AKP_4E();
+                break;
+		    case(TPantType::DSAx):
+                fParamPants->DSAx();
+			    break;
+        }
+
         break;
     case 6:
         iFlags = 0x068;
@@ -576,20 +618,20 @@ void TDynamicObject::UpdateDoorPlug(TAnim *pAnim) {
 
 void TDynamicObject::UpdatePant(TAnim *pAnim)
 { // animacja pantografu - 4 obracane ramiona, ślizg piąty
-    float a, b, c;
-    a = RadToDeg(pAnim->fParamPants->fAngleL - pAnim->fParamPants->fAngleL0);
-    b = RadToDeg(pAnim->fParamPants->fAngleU - pAnim->fParamPants->fAngleU0);
-    c = a + b;
-    if (pAnim->smElement[0])
-        pAnim->smElement[0]->SetRotate(float3(-1, 0, 0), a); // dolne ramię
-    if (pAnim->smElement[1])
-        pAnim->smElement[1]->SetRotate(float3(1, 0, 0), a);
-    if (pAnim->smElement[2])
-        pAnim->smElement[2]->SetRotate(float3(1, 0, 0), c); // górne ramię
-    if (pAnim->smElement[3])
-        pAnim->smElement[3]->SetRotate(float3(-1, 0, 0), c);
-    if (pAnim->smElement[4])
-        pAnim->smElement[4]->SetRotate(float3(-1, 0, 0), b); //ślizg
+	float a, b, c;
+	a = RadToDeg(pAnim->fParamPants->fAngleL - pAnim->fParamPants->fAngleL0);
+	b = RadToDeg(pAnim->fParamPants->fAngleU - pAnim->fParamPants->fAngleU0);
+	c = a + b;
+	if (pAnim->smElement[0])
+		pAnim->smElement[0]->SetRotate(float3(-1, 0, 0), a); // dolne ramie 1
+	if (pAnim->smElement[1])
+		pAnim->smElement[1]->SetRotate(float3(1, 0, 0), a * pAnim->fParamPants->rd2rf); // dolne ramie 2
+	if (pAnim->smElement[2])
+		pAnim->smElement[2]->SetRotate(float3(1, 0, 0), c); // górne ramie 1
+	if (pAnim->smElement[3])
+		pAnim->smElement[3]->SetRotate(float3(-1, 0, 0), c); // gorne ramie 2
+	if (pAnim->smElement[4])
+		pAnim->smElement[4]->SetRotate(float3(-1, 0, 0), b); // ślizg
 }
 
 // doorstep animation, shift
@@ -3685,7 +3727,7 @@ bool TDynamicObject::Update(double dt, double dt1)
                             0.95 * MoverParameters->EnginePowerSource.MaxVoltage :
                             0.0;
                 }
-                else if( ( true == MoverParameters->Pantographs[ end::front ].is_active )
+                else if( ( true == MoverParameters->Pantographs[ end::front ].is_active ) // pantograf dotyka sieci
                       && ( PantDiff < 0.01 ) ) // tolerancja niedolegania
                 {
                     if (p->hvPowerWire) {
@@ -3780,7 +3822,7 @@ bool TDynamicObject::Update(double dt, double dt1)
                 pantspeedfactor = 0.0;
             }
             pantspeedfactor = std::max( 0.0, pantspeedfactor );
-            k = p->fAngleL;
+            k = p->fAngleL * p->rd1rf;
             if( ( pantspeedfactor > 0.0 )
              && ( MoverParameters->Pantographs[i].is_active ) )// jeśli ma być podniesiony
             {
@@ -3810,19 +3852,21 @@ bool TDynamicObject::Update(double dt, double dt1)
                 if (k < p->fAngleL0)
                     k = p->fAngleL0; // położenie minimalne
             }
-            if (k != p->fAngleL)
+			if (k != p->fAngleL)
             { //żeby nie liczyć w kilku miejscach ani gdy nie potrzeba
-                if (k + p->fAngleU < M_PI)
+                // jesli katy ramienia gornego i dolnego razem sa mniejsze niz 144 stopnie
+				if (k + p->fAngleU * p->rg1rf < M_PI * 0.8)
                 { // o ile nie został osiągnięty kąt maksymalny
-                    p->fAngleL = k; // zmieniony kąt
+
+                    p->fAngleL = k * p->rd1rf; // zmieniony kąt
                     // wyliczyć kąt górnego ramienia z wzoru (a)cosinusowego
                     //=acos((b*cos()+c)/a)
                     // p->dPantAngleT=acos((1.22*cos(k)+0.535)/1.755); //górne ramię
-                    p->fAngleU = acos((p->fLenL1 * cos(k) + p->fHoriz) / p->fLenU1); // górne ramię
+					p->fAngleU = acos((p->fLenL1 * cos(p->fAngleL) + p->fHoriz) / p->fLenU1) * p->rg1rf; // górne ramię
                     // wyliczyć aktualną wysokość z wzoru sinusowego
                     // h=a*sin()+b*sin()
                     // wysokość całości
-                    p->PantWys = p->fLenL1 * sin(k) + p->fLenU1 * sin(p->fAngleU) + p->fHeight;
+					p->PantWys = p->fLenL1 * sin(p->fAngleL) + p->fLenU1 * sin(p->fAngleU) + p->fHeight;
                 }
             }
         } // koniec pętli po pantografach
@@ -5103,7 +5147,7 @@ void TDynamicObject::LoadMMediaFile( std::string const &TypeName, std::string co
                                         if (iAnimType[ANIM_PANTS]) // o ile jakieś pantografy są (a domyślnie są)
                                             pants = &pAnimations[k]; // zapamiętanie na potrzeby wyszukania submodeli
                                 pAnimations[k].iShift = sm; // przesunięcie do przydzielenia wskaźnika
-                                sm += pAnimations[k++].TypeSet(j); // ustawienie typu animacji i zliczanie tablicowanych submodeli
+                                sm += pAnimations[k++].TypeSet(j, *MoverParameters); // ustawienie typu animacji i zliczanie tablicowanych submodeli
                             }
                         if (sm) // o ile są bardziej złożone animacje
                         {

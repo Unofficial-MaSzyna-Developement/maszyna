@@ -467,6 +467,11 @@ struct TBoilerType {
     //}
 };
 /*rodzaj odbieraka pradu*/
+enum TPantType
+{
+	AKP_4E,
+	DSAx
+};
 struct TCurrentCollector {
     long CollectorsNo; //musi być tu, bo inaczej się kopie
     double MinH; double MaxH; //zakres ruchu pantografu, nigdzie nie używany
@@ -478,6 +483,7 @@ struct TCurrentCollector {
     double MaxPress;  //maksymalne ciśnienie za reduktorem
     bool FakePower;
     int PhysicalLayout;
+	TPantType PantographType = TPantType::AKP_4E;
     //inline TCurrentCollector() {
     //    CollectorsNo = 0;
     //    MinH, MaxH, CSW, MinV, MaxV = 0.0;
@@ -1064,6 +1070,7 @@ public:
 	std::string TypeName;         /*nazwa serii/typu*/
 	int TrainType = 0; /*typ: EZT/elektrowoz - Winger 040304 Ra: powinno być szybciej niż string*/
 	TEngineType EngineType = TEngineType::None;               /*typ napedu*/
+	
 	TPowerParameters EnginePowerSource;    /*zrodlo mocy dla silnikow*/
 	TPowerParameters SystemPowerSource;    /*zrodlo mocy dla systemow sterowania/przetwornic/sprezarek*/
 	TPowerParameters HeatingPowerSource;   /*zrodlo mocy dla ogrzewania*/
