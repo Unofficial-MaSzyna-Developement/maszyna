@@ -377,6 +377,8 @@ TTrain::commandhandler_map const TTrain::m_commandhandlers = {
     { user_command::headlighttogglerearupper, &TTrain::OnCommand_headlighttogglerearupper },
     { user_command::headlightenablerearupper, &TTrain::OnCommand_headlightenablerearupper },
     { user_command::headlightdisablerearupper, &TTrain::OnCommand_headlightdisablerearupper },
+    {user_command::modernlightdimmerdecrease, &TTrain::OnCommand_modernlightdimmerdecrease},
+    {user_command::modernlightdimmerincrease, &TTrain::OnCommand_modernlightdimmerincrease},
     { user_command::redmarkertogglerearleft, &TTrain::OnCommand_redmarkertogglerearleft },
     { user_command::redmarkerenablerearleft, &TTrain::OnCommand_redmarkerenablerearleft },
     { user_command::redmarkerdisablerearleft, &TTrain::OnCommand_redmarkerdisablerearleft },
@@ -4699,6 +4701,44 @@ void TTrain::OnCommand_headlightdisablerearupper( TTrain *Train, command_data co
     }
 }
 
+void TTrain::OnCommand_modernlightdimmerincrease(TTrain* Train, command_data const& Command) 
+{
+	if (!Train->mvOccupied->enableModernDimmer)
+		return; // if modern dimmer is disabled, skip entire command
+    if (Command.action == GLFW_PRESS)
+    {
+        // update modern dimmer state
+		if (Train->mvOccupied->modernDimmerState < 4)
+			Train->mvOccupied->modernDimmerState++;
+		    Train->Dynamic()->SetLights();
+        // visual feedback
+		if (Train->ggModernLightDimSw.SubModel != nullptr)
+		    if (Train->mvOccupied->modernContainOffPos)
+			    Train->ggModernLightDimSw.UpdateValue(Train->mvOccupied->modernDimmerState, Train->dsbSwitch);
+		    else
+			    Train->ggModernLightDimSw.UpdateValue(Train->mvOccupied->modernDimmerState - 1, Train->dsbSwitch);
+	}
+}
+void TTrain::OnCommand_modernlightdimmerdecrease(TTrain *Train, command_data const &Command) 
+{
+	if (!Train->mvOccupied->enableModernDimmer)
+		return; // if modern dimmer is disabled, skip entire command
+	if (Command.action == GLFW_PRESS)
+	{
+		byte minPos = (Train->mvOccupied->modernContainOffPos) ? 0 : 1; // prevent switching to 0 if its not enabled
+		// update modern dimmer state
+		if (Train->mvOccupied->modernDimmerState > minPos)
+			Train->mvOccupied->modernDimmerState--;
+		    Train->Dynamic()->SetLights();
+        // visual feedback
+		if (Train->ggModernLightDimSw.SubModel != nullptr)
+			if (Train->mvOccupied->modernContainOffPos)
+			    Train->ggModernLightDimSw.UpdateValue(Train->mvOccupied->modernDimmerState, Train->dsbSwitch);
+			else
+				Train->ggModernLightDimSw.UpdateValue(Train->mvOccupied->modernDimmerState - 1, Train->dsbSwitch);
+    }
+}
+
 void TTrain::OnCommand_redmarkertogglerearleft( TTrain *Train, command_data const &Command ) {
     if( Command.action == GLFW_PRESS ) {
         // NOTE: we toggle the light on opposite side, as 'rear right' is 'front left' on the rear end etc
@@ -4878,10 +4918,12 @@ void TTrain::OnCommand_endsignalstoggle( TTrain *Train, command_data const &Comm
 }
 
 void TTrain::OnCommand_headlightsdimtoggle( TTrain *Train, command_data const &Command ) {
-
+	if (Train->DynamicObject->MoverParameters->enableModernDimmer)
+		return;
     if( Command.action == GLFW_PRESS ) {
         // only reacting to press, so the switch doesn't flip back and forth if key is held down
-        if( false == Train->DynamicObject->DimHeadlights ) {
+		if (Train->DynamicObject->MoverParameters->modernDimmerState == 2)
+		{
             // turn on
             OnCommand_headlightsdimenable( Train, Command );
         }
@@ -4894,37 +4936,57 @@ void TTrain::OnCommand_headlightsdimtoggle( TTrain *Train, command_data const &C
 
 void TTrain::OnCommand_headlightsdimenable( TTrain *Train, command_data const &Command ) {
 
+    if (Train->DynamicObject->MoverParameters->enableModernDimmer)
+		return;
     if( Command.action == GLFW_PRESS ) {
         // only reacting to press, so the switch doesn't flip back and forth if key is held down
-        if( Train->ggDimHeadlightsButton.SubModel == nullptr ) {
+        if( Train->ggDimHeadlightsButton.SubModel != nullptr ) {
             // TODO: proper control deviced definition for the interiors, that doesn't hinge of presence of 3d submodels
-            WriteLog( "Dim Headlights switch is missing, or wasn't defined" );
-            return;
+			// visual feedback
+			Train->ggDimHeadlightsButton.UpdateValue(1.0, Train->dsbSwitch);
         }
-        // visual feedback
-        Train->ggDimHeadlightsButton.UpdateValue( 1.0, Train->dsbSwitch );
 
-        if( true == Train->DynamicObject->DimHeadlights ) { return; } // already enabled
+        /* // to jest stara logika
+        if (true == Train->DynamicObject->DimHeadlights)
+		{
+			return;
+		} // already enabled
 
         Train->DynamicObject->DimHeadlights = true;
+        */
+		WriteLog("Switch do 1");
+        Train->DynamicObject->MoverParameters->modernDimmerState = 1;   // ustawiamy modern dimmer na flage przyciemnienia
+		Train->DynamicObject->RaLightsSet(Train->DynamicObject->MoverParameters->iLights[0],
+		    Train->DynamicObject->MoverParameters->iLights[1]
+            ); // aktualizacja swiatelek
     }
 }
 
 void TTrain::OnCommand_headlightsdimdisable( TTrain *Train, command_data const &Command ) {
 
+    if (Train->DynamicObject->MoverParameters->enableModernDimmer) // nie wiem dlaczego to tak dziala ze jest odwrocona logika
+		return;
     if( Command.action == GLFW_PRESS ) {
         // only reacting to press, so the switch doesn't flip back and forth if key is held down
-        if( Train->ggDimHeadlightsButton.SubModel == nullptr ) {
+        if( Train->ggDimHeadlightsButton.SubModel != nullptr ) {
             // TODO: proper control deviced definition for the interiors, that doesn't hinge of presence of 3d submodels
-            WriteLog( "Dim Headlights switch is missing, or wasn't defined" );
-            return;
+            // visual feedback
+            Train->ggDimHeadlightsButton.UpdateValue(0.0, Train->dsbSwitch);
         }
-        // visual feedback
-        Train->ggDimHeadlightsButton.UpdateValue( 0.0, Train->dsbSwitch );
 
+
+		/* // stara logika przyciemniania
         if( false == Train->DynamicObject->DimHeadlights ) { return; } // already enabled
 
         Train->DynamicObject->DimHeadlights = false;
+
+        */
+		WriteLog("Switch do 2");
+		Train->DynamicObject->MoverParameters->modernDimmerState = 2; // ustawiamy modern dimmer na flage rozjasnienia
+		Train->DynamicObject->RaLightsSet(
+            Train->DynamicObject->MoverParameters->iLights[0],
+            Train->DynamicObject->MoverParameters->iLights[1]
+            ); // aktualizacja swiatelek
     }
 }
 
@@ -6943,13 +7005,12 @@ bool TTrain::Update( double const Deltatime )
 
     // McZapkie: predkosc wyswietlana na tachometrze brana jest z obrotow kol
     auto const maxtacho { 3.0 };
-
-    double maxSpeed = mvControlled->Vmax * 1.05; // zachowanie starej logiki jak nie ma definicji max tarczki
-	if (mvOccupied->maxTachoSpeed != 0)
+	double maxSpeed = mvControlled->Vmax * 1.05; // zachowanie starej logiki jak nie ma definicji max tarczki
+	if (mvControlled->maxTachoSpeed != 0)
 	{
-		maxSpeed = mvOccupied->maxTachoSpeed;
-    }
-    fTachoVelocity = static_cast<float>(std::min(std::abs(11.31 * mvControlled->WheelDiameter * mvControlled->nrot), maxSpeed));
+		maxSpeed = mvControlled->maxTachoSpeed;
+	}
+	fTachoVelocity = static_cast<float>(std::min(std::abs(11.31 * mvControlled->WheelDiameter * mvControlled->nrot), maxSpeed));
     { // skacze osobna zmienna
         float ff = simulation::Time.data().wSecond; // skacze co sekunde - pol sekundy
         // pomiar, pol sekundy ustawienie
@@ -6959,7 +7020,7 @@ bool TTrain::Update( double const Deltatime )
 				fTachoVelocityJump = fTachoVelocity + (2.0 - LocalRandom(3) + LocalRandom(3)) * 0.5;
 			else if (fTachoVelocity < 5 && fTachoVelocity > 1)
 				fTachoVelocityJump = Random(0, 4); // tu ma sie bujac jak wariat i zatrzymac na jakiejs predkosci
-                // fTachoVelocityJump = 0; // stoi
+			// fTachoVelocityJump = 0; // stoi
             fTachoTimer = ff; // juz zmienil
         }
     }
@@ -7392,6 +7453,15 @@ bool TTrain::Update( double const Deltatime )
 		btAKLVents.Turn(true);
 	else
 		btAKLVents.Turn(false);
+
+    if (mvOccupied->modernDimmerState >= 3)
+	{
+		btHighBeamLights.Turn(true);
+    }
+    else 
+    {
+		btHighBeamLights.Turn(true);
+    }
 
     if( true == lowvoltagepower ) {
         // McZapkie-141102: SHP i czuwak, TODO: sygnalizacja kabinowa
@@ -8030,6 +8100,7 @@ bool TTrain::Update( double const Deltatime )
     ggRightLightButton.Update();
     ggLeftEndLightButton.Update();
     ggRightEndLightButton.Update();
+	ggModernLightDimSw.Update();
     // hunter-230112
     ggRearUpperLightButton.Update();
     ggRearLeftLightButton.Update();
@@ -8037,6 +8108,7 @@ bool TTrain::Update( double const Deltatime )
     ggRearLeftEndLightButton.Update();
     ggRearRightEndLightButton.Update();
     ggDimHeadlightsButton.Update();
+	ggDimHeadlightsButton.Update();
     //------------
     ggConverterButton.Update();
     ggConverterLocalButton.Update();
@@ -9626,6 +9698,7 @@ void TTrain::clear_cab_controls()
     ggRightLightButton.Clear();
     ggUpperLightButton.Clear();
     ggDimHeadlightsButton.Clear();
+	ggModernLightDimSw.Clear();
     ggLeftEndLightButton.Clear();
     ggRightEndLightButton.Clear();
     ggLightsButton.Clear();
@@ -9657,6 +9730,14 @@ void TTrain::set_cab_controls( int const Cab ) {
                 m_linebreakerstate > 0 ? 1.f :
                 0.f ) );
     }
+
+    if (ggModernLightDimSw.SubModel != nullptr) {
+		if (mvOccupied->modernContainOffPos)
+		    ggModernLightDimSw.PutValue(mvOccupied->modernDimmerState);
+        else 
+            ggModernLightDimSw.PutValue(mvOccupied->modernDimmerState - 1);
+    }
+
     // motor connectors
     ggStLinOffButton.PutValue(
         ( mvControlled->StLinSwitchOff ?
@@ -9784,7 +9865,7 @@ void TTrain::set_cab_controls( int const Cab ) {
             ggRightLightButton.PutValue( -1.f );
         }
     }
-    if( true == DynamicObject->DimHeadlights ) {
+    if( 1 == DynamicObject->MoverParameters->modernDimmerState ) {
         ggDimHeadlightsButton.PutValue( 1.f );
     }
     // cab lights
@@ -10098,7 +10179,8 @@ bool TTrain::initialize_button(cParser &Parser, std::string const &Label, int co
         { "i-universal9:", btUniversals[ 9 ] },
         { "i-cabactived:", btCabActived },
 	    {"i-aklvents:", btAKLVents},
-	    {"i-compressorany:", btCompressors }
+	    {"i-compressorany:", btCompressors },
+	    {"i-highbeamlights:", btHighBeamLights}
     };
     {
         auto lookup = lights.find( Label );
@@ -10219,6 +10301,7 @@ bool TTrain::initialize_gauge(cParser &Parser, std::string const &Label, int con
         { "leftend_sw:", ggLeftEndLightButton },
         { "rightend_sw:", ggRightEndLightButton },
         { "lights_sw:", ggLightsButton },
+	    { "moderndimmer_sw:", ggModernLightDimSw },
         { "rearupperlight_sw:", ggRearUpperLightButton },
         { "rearleftlight_sw:", ggRearLeftLightButton },
         { "rearrightlight_sw:", ggRearRightLightButton },

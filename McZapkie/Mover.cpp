@@ -8615,9 +8615,7 @@ TMoverParameters::update_doors( double const Deltatime ) {
      || ( Doors.close_control == control_t::conductor )
      || ( Doors.close_control == control_t::mixed ) };
 
-    Doors.is_locked =
-        ( true == Doors.has_lock )
-     && ( true == Doors.lock_enabled ) && (Vel >= Doors.doorLockSpeed);
+    Doors.is_locked = (true == Doors.has_lock) && (true == Doors.lock_enabled) && (Vel >= Doors.doorLockSpeed);
 
     for( auto &door : Doors.instances ) {
         // revoke permit if...
@@ -9665,6 +9663,14 @@ bool TMoverParameters::LoadFIZ(std::string chkpath)
             continue;
         }
 
+        if (issection("Headlights:", inputline))
+        {
+            startBPT = false;
+			fizlines.emplace("Headlights", inputline);
+			LoadFIZ_Headlights(inputline);
+			continue;
+        }
+
 		if (issection("Blending:", inputline)) {
 
 			startBPT = false; LISTLINE = 0;
@@ -9934,6 +9940,13 @@ bool TMoverParameters::LoadFIZ(std::string chkpath)
     else
         result = false;
 
+    if (!modernContainOffPos)
+		modernDimmerState = 2;  // jak nie ma opcji wylaczonej to niech sie odpali normalnie
+	if (!enableModernDimmer)
+	{
+		modernDimmerState = 2;
+	}
+
     WriteLog("CERROR: " + to_string(ConversionError) + ", SUCCES: " + to_string(result));
     return result;
 }
@@ -10023,6 +10036,18 @@ void TMoverParameters::LoadFIZ_Load( std::string const &line ) {
     extract_value( OverLoadFactor, "OverLoadFactor", line, "" );
     extract_value( LoadSpeed, "LoadSpeed", line, "" );
     extract_value( UnLoadSpeed, "UnLoadSpeed", line, "" );
+}
+
+void TMoverParameters::LoadFIZ_Headlights(std::string const &line)
+{
+	extract_value(refR, "LampRed", line, "");
+	extract_value(refG, "LampGreen", line, "");
+	extract_value(refB, "LampBlue", line, "");
+
+    extract_value(dimMultiplier, "DimmedMultiplier", line, "");
+    extract_value(normMultiplier, "NormalMultiplier", line, "");
+    extract_value(highDimMultiplier, "HighbeamDimmedMultiplier", line, "");
+    extract_value(highMultiplier, "HighBeamMultiplier", line, "");
 }
 
 void TMoverParameters::LoadFIZ_Dimensions( std::string const &line ) {
@@ -10291,6 +10316,7 @@ void TMoverParameters::LoadFIZ_Doors( std::string const &line ) {
     extract_value( Doors.has_autowarning, "DoorClosureWarningAuto", line, "" );
     extract_value( Doors.has_lock, "DoorBlocked", line, "" );
 	extract_value(Doors.doorLockSpeed, "DoorLockSpeed", line, "");
+
     {
         auto const remotedoorcontrol {
             ( Doors.open_control == control_t::driver )
@@ -11119,6 +11145,8 @@ void TMoverParameters::LoadFIZ_Switches( std::string const &Input ) {
     extract_value( UniversalResetButtonFlag[ 0 ], "RelayResetButton1", Input, "" );
     extract_value( UniversalResetButtonFlag[ 1 ], "RelayResetButton2", Input, "" );
     extract_value( UniversalResetButtonFlag[ 2 ], "RelayResetButton3", Input, "" );
+	extract_value(enableModernDimmer, "ModernDimmer", Input, "");
+	extract_value(modernContainOffPos, "ModernDimmerOffPosition", Input, "");
     // pantograph presets
     {
         auto &presets { PantsPreset.first };
