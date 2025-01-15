@@ -239,8 +239,8 @@ int TAnim::TypeSet(int i, TMoverParameters currentMover, int fl)
             case(TPantType::EC160_200):
                 fParamPants->EC160_200();
 			    break;
-            case(TPantType::WBL88):
-                fParamPants->WBL88();
+            case(TPantType::WBL85):
+                fParamPants->WBL85();
 			    break;
         }
 
