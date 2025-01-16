@@ -32,6 +32,9 @@ int const EU07_CELLSIZE = 250;
 int const EU07_SECTIONSIZE = 1000;
 int const EU07_REGIONSIDESECTIONCOUNT = 500; // number of sections along a side of square region
 
+/// <summary>
+/// 
+/// </summary>
 struct scratch_data {
 
     struct binary_data {
@@ -63,8 +66,9 @@ struct scratch_data {
 	bool time_initialized { false };
 };
 
-// basic element of rudimentary partitioning scheme for the section. fixed size, no further subdivision
-// TBD, TODO: replace with quadtree scheme?
+/// <summary>
+/// basic element of rudimentary partitioning scheme for the section. fixed size, no further subdivision
+/// </summary>
 class basic_cell {
 
     friend opengl_renderer;
@@ -207,7 +211,9 @@ private:
 	command_relay m_relay;
 };
 
-// basic scene partitioning structure, holds terrain geometry and collection of cells
+/// <summary>
+/// basic scene partitioning structure, holds terrain geometry and collection of cells
+/// </summary>
 class basic_section {
 
     friend opengl_renderer;
@@ -323,7 +329,9 @@ private:
     gfx::geometrybank_handle m_map_geometryhandle;
 };
 
-// top-level of scene spatial structure, holds collection of sections
+/// <summary>
+/// top-level of scene spatial structure, holds collection of sections
+/// </summary>
 class basic_region {
 
     friend opengl_renderer;
